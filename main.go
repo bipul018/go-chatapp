@@ -107,6 +107,21 @@ func (cxt *Context) DumpIt() {
 	fmt.Println()
 }
 
+// Only call this function when the websocket connection closes (detect using the channels)
+func (cxt *Context) RemoveClient(username string) error {
+	cl, ok := cxt.Clients[username]
+	if !ok { return errors.New("Cannot remove non existing user") }
+
+	delete(cxt.Clients, username)
+	// Now visit each group and remove the client
+	for _, group := cxt.Groups {
+		// This works becauze it's a map to a 'true' value
+		if group.Members[usernme] {
+			delete(group.Members, username)
+		}
+	}
+	// TODO:: Then notify each group
+}
 func (cxt *Context) AddClient(client *Client) error {
 	if client == nil {
 		return errors.New("Need to provide a valid client to add it")
@@ -228,6 +243,7 @@ func (cxt *Context) launch_client(name string, conn *websocket.Conn) error {
 	// Goroutine that handles notificaitions
 	go func(notch <-chan Message) {
 		defer conn.Close()
+		defer cxt.RemoveClient(client.Name)
 
 		// Receive a 'Message' struct to notify the client
 		//  it could have been sent by anyone, but ultimately its simple to handle
