@@ -1,0 +1,82 @@
+<!doctype html>
+<html>
+  <head> <title> The Chat Application </title> </head>
+  <body>
+
+    <div id='notifbox'> </div>
+    <div id='username'> </div>
+    <button id='renamebut'> Rename Urself </button>
+    <button id='creategrp'> Create Group </button>
+    <button id='joingrp'> Join Group </button>
+    <button id='addfrnd'> Add Friend </button>
+    <div id='chatbox'> </div>
+
+    <input type='text' id='messagebox'> </input>
+    <button id="sendbut"> Send </button>
+
+    <!-- Random testing buttons -->
+    <label for="room"> Chat Room </label>
+    <select name="room" id="roomlist">
+      <option value="everyone">everyone</option>
+      <option value="noone">noone</option>
+    </select>
+
+    <!--button id="button2"> Send Private </button-->
+    <script>
+      window.addEventListener
+      ("load", async () => {
+	  const e = ['notifbox','username','renamebut','creategrp',
+		     'joingrp', 'addfrnd', 'chatbox', 'messagebox',
+		     'sendbut', 'roomlist'].reduce((acc, item) => {
+			 acc[item] = document.getElementById(item);
+			 return acc;
+		     }, {});
+	  
+	  const addr = `ws://${window.location.host}/ws`;
+	  console.log(addr);
+	  wsconn = new WebSocket(addr);
+
+	  // Initialize button actions
+	  const add_click = (but, fn)=>{but.addEventListener('click', fn);};
+
+	  add_click(e.sendbut, () => wsconn.send("message\0" + e.messagebox.value));
+	  add_click(e.renamebut, () => wsconn.send("rename\0" + prompt("Your New Name:", e.username)));
+	  // change_group
+	  e.roomlist.addEventListener('change', (evt) => {
+	      wsconn.send("change_group\0" + evt.target.value);
+	  });
+	  add_click(e.creategrp, () => wsconn.send("create_group\0" + prompt("New Group Name:")));
+	  add_click(e.joingrp, () => wsconn.send("add_group\0" + prompt("Add Group Name:")));
+	  // TODO:: ADD FOR 'ADD FRIEND'
+
+	  wsconn.onopen = (evt) =>{
+	      wsconn.addEventListener('close',
+				      (evt) => {
+					  e.notifbox.value = 'Closed';
+				      })
+	  };
+	  wsconn.onmessage = (evt) => {
+	      
+	      const data = evt.data; // should be a string
+	      const nullIndex = data.indexOf('\0');
+
+	      if (nullIndex === -1) {
+		  console.error("Invalid message format, missing delimiter");
+		  return;
+	      }
+
+	      const id = data.slice(0, nullIndex);
+	      const content = data.slice(nullIndex + 1);
+	      
+	      // Contains id and text to replace with 
+	      console.log(`Got data '${evt.data}' for id '${id}' from server\n`);
+	      document.getElementById(id).innerHTML = content
+
+	  };
+      });
+
+    </script>
+
+  </body>
+</html>
+
