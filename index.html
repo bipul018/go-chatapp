@@ -39,7 +39,13 @@
 	  // Initialize button actions
 	  const add_click = (but, fn)=>{but.addEventListener('click', fn);};
 
-	  add_click(e.sendbut, () => wsconn.send("message\0" + e.messagebox.value));
+	  add_click(e.sendbut, () => {wsconn.send("message\0" + e.messagebox.value); e.messagebox.value="";});
+	  e.messagebox.addEventListener("keypress", function(event) {
+	      if (event.key === "Enter") {
+		  event.preventDefault();
+		  e.sendbut.click();
+	      }
+	  }); 
 	  add_click(e.renamebut, () => wsconn.send("rename\0" + prompt("Your New Name:", e.username)));
 	  // change_group
 	  e.roomlist.addEventListener('change', (evt) => {
